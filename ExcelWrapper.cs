@@ -1,4 +1,4 @@
-﻿using DocumentFormat.OpenXml;
+using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
 using System;
@@ -551,24 +551,24 @@ namespace OpenXMLExtend
 
 		#region 读取Excel相关
 
-		public ExlsSheetData ReadSpreadSheetDoc(string filename, int startRowIndex)
+		public ExlsSheetData ReadSpreadSheetDoc(string filename, int sheetIndex, int startRowIndex)
 		{
 			if (Path.GetExtension(filename).Equals(".xls", StringComparison.OrdinalIgnoreCase))
 				filename = ConvertToXlsx(filename);
 
 			using (var stream = File.Open(filename, FileMode.Open))
 			{
-				return ReadSpreadSheetDoc(stream, startRowIndex);
+				return ReadSpreadSheetDoc(stream, sheetIndex, startRowIndex);
 			}
 		}
 
-		public ExlsSheetData ReadSpreadSheetDoc(Stream stream, int startRowIndex)
+		public ExlsSheetData ReadSpreadSheetDoc(Stream stream, int sheetIndex, int startRowIndex)
 		{
 			ExlsSheetData result = new ExlsSheetData();
 			using (SpreadsheetDocument spreadsheetDocument = SpreadsheetDocument.Open(stream, false))
 			{
 				WorkbookPart workbookPart = spreadsheetDocument.WorkbookPart;
-				var theSheet = workbookPart.Workbook.Sheets.FirstChild as Sheet;
+				var theSheet = workbookPart.Workbook.Sheets.ElementAt(sheetIndex) as Sheet;
 				var workSheetPart = workbookPart.GetPartById(theSheet.Id) as WorksheetPart;
 				string cellValue = string.Empty;
 				uint rowIndex = 1;
