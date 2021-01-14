@@ -351,7 +351,7 @@ namespace OpenXMLExtend
 				Dictionary<string, Fill> fgColorAndFills = new Dictionary<string, Fill>();
 				if (cfs.Any(x => !string.IsNullOrEmpty(x.FGColor)))
 				{
-					foreach (var fg in cfs.Where(x => !string.IsNullOrEmpty(x.FGColor)).Select(x => x.FGColor))
+					foreach (var fg in cfs.Where(x => !string.IsNullOrEmpty(x.FGColor)).Select(x => x.FGColor).Distinct())
 					{
 						var f = new Fill(new PatternFill() { PatternType = PatternValues.Solid, ForegroundColor = new ForegroundColor() { Rgb = new HexBinaryValue(fg) } });
 						fgColorAndFills.Add(fg, f);
@@ -668,7 +668,7 @@ namespace OpenXMLExtend
 
 				filename = Path.Combine(Path.GetTempPath(), Path.GetFileNameWithoutExtension(filename) + Guid.NewGuid().ToString() + ".xlsx");
 				xlWorkBook.SaveAs(filename, Microsoft.Office.Interop.Excel.XlFileFormat.xlOpenXMLWorkbook, Missing.Value,
-			Missing.Value, false, false, Microsoft.Office.Interop.Excel.XlSaveAsAccessMode.xlNoChange, Microsoft.Office.Interop.Excel.XlSaveConflictResolution.xlUserResolution, true, Missing.Value, Missing.Value, Missing.Value);
+			Missing.Value, false, false, Microsoft.Office.Interop.Excel.XlSaveAsAccessMode.xlNoChange, Microsoft.Office.Interop.Excel.XlSaveConflictResolution.xlOtherSessionChanges, true, Missing.Value, Missing.Value, Missing.Value);
 			}
 			catch
 			{
