@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -21,15 +21,21 @@ namespace OpenXMLExtend
 		{
 			SheetRows = rowItems;
 		}
+		private List<SheetCellItem> allCells;
 		public List<SheetCellItem> AllCells
 		{
 			get
 			{
-				List<SheetCellItem> cells = new List<SheetCellItem>();
-				if (SheetRows != null && SheetRows.Any())
-					foreach (var itm in SheetRows)
-						cells.AddRange(itm.RowCells);
-				return cells;
+				if (allCells != null && allCells.Any())
+					return allCells;
+				else
+				{
+					allCells = new List<SheetCellItem>();
+					if (SheetRows != null && SheetRows.Any())
+						foreach (var itm in SheetRows)
+							allCells.AddRange(itm.RowCells);
+					return allCells;
+				}
 			}
 		}
 		public List<SheetRowItem> SheetRows { get; set; }
@@ -100,8 +106,8 @@ namespace OpenXMLExtend
 					if (rowDataAttr.IsImport && rowDataAttr.OrderInImporter == order)
 						return itm;
 				}
-				else
-					throw new Exception("ColAttribute not found");
+				//else
+				//    throw new Exception("ColAttribute not found");
 			}
 
 			return null;
@@ -258,7 +264,7 @@ namespace OpenXMLExtend
 	public class CellTextPart
 	{
 		public string Text { get; set; }
-		public DataTypes TheDataType{get;set;}
+		public DataTypes TheDataType { get; set; }
 		public SheetCellFormats PartFormat { get; set; }
 	}
 	public enum HorizontalAlignments
@@ -274,4 +280,5 @@ namespace OpenXMLExtend
 		Top,
 		Middle,
 		Bottom
-	}}
+	}
+}
