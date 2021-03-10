@@ -1,4 +1,4 @@
-using DocumentFormat.OpenXml;
+﻿using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
 using System;
@@ -114,10 +114,10 @@ namespace OpenXMLExtend
 				}
 				if (allCells.Any())
 				{
-					if (customFormat)
-						stylePart.Stylesheet = GenerateStylesheet(allCells);
-					else
-						stylePart.Stylesheet = DefaultStylesheet();//GenerateDefaultStylesheet(allCells);
+					var ss = customFormat ? GenerateStylesheet(allCells) : DefaultStylesheet();
+					if (ss == null)
+						ss = DefaultStylesheet();
+					stylePart.Stylesheet = ss;
 					stylePart.Stylesheet.Save();
 				}
 
@@ -358,7 +358,7 @@ namespace OpenXMLExtend
 						fills.AppendChild(f);
 					}
 				}
-				Fonts fonts = new Fonts(new Font(new FontSize() { Val = 10 }));
+				Fonts fonts = new Fonts(new Font(new FontSize() { Val = 10 }), new Font(new FontSize() { Val = 10 }, new FontName() { Val = "Arial"}));
 				Borders borders = new Borders(new Border(),
 					new Border(
 									new LeftBorder(new Color() { Auto = true }) { Style = BorderStyleValues.Thin },
@@ -404,11 +404,13 @@ namespace OpenXMLExtend
 						tag = true;
 					}
 
-					if (itm.HorizontalAlignment != HorizontalAlignments.Default || itm.VerticalAlignment != VerticalAlignments.Default)
+					if (itm.HorizontalAlignment != HorizontalAlignments.Default || itm.VerticalAlignment != VerticalAlignments.Default || itm.WrapText)
 					{
 						var align = new Alignment();
 						switch (itm.HorizontalAlignment)
 						{
+							case HorizontalAlignments.Default:
+								break;
 							case HorizontalAlignments.Center:
 								align.Horizontal = HorizontalAlignmentValues.Center;
 								break;
@@ -421,6 +423,8 @@ namespace OpenXMLExtend
 						}
 						switch (itm.VerticalAlignment)
 						{
+							case VerticalAlignments.Default:
+								break;
 							case VerticalAlignments.Top:
 								align.Vertical = VerticalAlignmentValues.Top;
 								break;
@@ -431,6 +435,7 @@ namespace OpenXMLExtend
 								align.Vertical = VerticalAlignmentValues.Bottom;
 								break;
 						}
+						align.WrapText = itm.WrapText;
 						cf.Append(align);
 						cf.ApplyAlignment = true;
 						tag = true;
@@ -452,7 +457,9 @@ namespace OpenXMLExtend
 						if (itm.FontBold || itm.FontSize > 0 || !string.IsNullOrEmpty(itm.FontColor) || !string.IsNullOrEmpty(itm.FontName) ||
 							itm.HorizontalAlignment != HorizontalAlignments.Default || itm.VerticalAlignment != VerticalAlignments.Default)
 						{
-							if (itm.Borders[0])
+							if(itm.Borders[0] && itm.Borders[1] && itm.Borders[2] && itm.Borders[3])
+								lstCellFormats[index].BorderId = 1;
+							else if (itm.Borders[0])
 								lstCellFormats[index].BorderId = 2;
 							else if (itm.Borders[1])
 								lstCellFormats[index].BorderId = 3;
@@ -464,7 +471,9 @@ namespace OpenXMLExtend
 						else
 						{
 							CellFormat fc = new CellFormat();
-							if (itm.Borders[0])
+							if(itm.Borders[0] && itm.Borders[1] && itm.Borders[2] && itm.Borders[3])
+								fc.BorderId = 1;
+							else if (itm.Borders[0])
 								fc.BorderId = 2;
 							else if (itm.Borders[1])
 								fc.BorderId = 3;
@@ -538,6 +547,12 @@ namespace OpenXMLExtend
 			if (item != null && item.RowCells != null && item.RowCells.Any())
 			{
 				result = new Row { RowIndex = rowIndex };
+				if(item.RowHeight > 0)
+				{
+					result.CustomHeight = BooleanValue.FromBoolean(true);
+					result.Height = item.RowHeight;
+				}
+
 				foreach (var itm in item.RowCells.OrderBy(x => x.ColIndex))
 				{
 					Cell cell = CreateCell(ColumnLetter((int)itm.ColIndex), item.RowIndex, itm.Data, itm.DataType, itm.Texts, shareStringPart, itm.FormatIndex);
@@ -574,7 +589,7 @@ namespace OpenXMLExtend
 				uint rowIndex = 1;
 				var lstDataRows = new List<SheetRowItem>();
 				var rows = workSheetPart.Worksheet.Descendants<Row>();
-				if (rows.Count() > startRowIndex)
+				if (rows.Count() >= startRowIndex)
 				{
 					foreach (Row r in rows.Skip(startRowIndex - 1))
 					{
@@ -665,10 +680,14 @@ namespace OpenXMLExtend
 			try
 			{
 				xlWorkBook = xlApp.Workbooks.Open(filename, 0, true, 5, "", "", true, Microsoft.Office.Interop.Excel.XlPlatform.xlWindows, "\t", false, false, 0, true, 1, 0);
-
-				filename = Path.Combine(Path.GetTempPath(), Path.GetFileNameWithoutExtension(filename) + Guid.NewGuid().ToString() + ".xlsx");
+				xlApp.DisplayAlerts = false;
+				var tempPath = Path.Combine( AppDomain.CurrentDomain.BaseDirectory,"TempForXlsConvert");
+				if(!Directory.Exists(tempPath))
+					Directory.CreateDirectory(tempPath);
+				
+				filename = Path.Combine(tempPath, Path.GetFileNameWithoutExtension(filename) + Guid.NewGuid().ToString() + ".xlsx");
 				xlWorkBook.SaveAs(filename, Microsoft.Office.Interop.Excel.XlFileFormat.xlOpenXMLWorkbook, Missing.Value,
-			Missing.Value, false, false, Microsoft.Office.Interop.Excel.XlSaveAsAccessMode.xlNoChange, Microsoft.Office.Interop.Excel.XlSaveConflictResolution.xlOtherSessionChanges, true, Missing.Value, Missing.Value, Missing.Value);
+			Missing.Value, false, false, Microsoft.Office.Interop.Excel.XlSaveAsAccessMode.xlNoChange, Microsoft.Office.Interop.Excel.XlSaveConflictResolution.xlLocalSessionChanges, true, Missing.Value, Missing.Value, Missing.Value);
 			}
 			catch
 			{

@@ -18,6 +18,7 @@ namespace OpenXMLExtend
 		/// </summary>
 		public int ColWidth { get; set; }
 		public DataTypes DataTxtType { get; set; }
+		public string ColName{get;set;}
 		public ColAttribute()
 		{
 			DataTxtType = DataTypes.String;

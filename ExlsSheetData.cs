@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -21,21 +21,15 @@ namespace OpenXMLExtend
 		{
 			SheetRows = rowItems;
 		}
-		private List<SheetCellItem> allCells;
 		public List<SheetCellItem> AllCells
 		{
 			get
 			{
-				if (allCells != null && allCells.Any())
-					return allCells;
-				else
-				{
-					allCells = new List<SheetCellItem>();
-					if (SheetRows != null && SheetRows.Any())
-						foreach (var itm in SheetRows)
-							allCells.AddRange(itm.RowCells);
-					return allCells;
-				}
+				List<SheetCellItem> cells = new List<SheetCellItem>();
+				if (SheetRows != null && SheetRows.Any())
+					foreach (var itm in SheetRows)
+						cells.AddRange(itm.RowCells);
+				return cells;
 			}
 		}
 		public List<SheetRowItem> SheetRows { get; set; }
@@ -49,6 +43,29 @@ namespace OpenXMLExtend
 
 			SheetRows.Add(row);
 		}
+		public void AddCell(SheetCellItem cell, uint rindex)
+		{
+			AddCell(cell, rindex, null);
+		}
+		public void AddCell(SheetCellItem cell, uint rindex, SheetRowFormats rowFormats)
+		{
+			if (rindex < 1)
+				throw new ArgumentOutOfRangeException("rindex", "rowindex must greater than zero");
+
+			var r = FindRow(rindex);
+			if (r == null)
+			{
+				r = new SheetRowItem(new List<SheetCellItem>(), rindex);
+				if(rowFormats != null)
+				{
+					r.RowHeight = rowFormats.RowHeight;
+				}
+				AddRow(r);
+			}
+			cell.RowIndex = rindex;
+			r.RowCells.Add(cell);
+		}
+
 		protected SheetRowItem FindRow(uint rindex)
 		{
 			SheetRowItem result = null;
@@ -58,21 +75,6 @@ namespace OpenXMLExtend
 
 			return result;
 		}
-		public void AddCell(SheetCellItem cell, uint rindex)
-		{
-			if (rindex < 1)
-				throw new ArgumentOutOfRangeException("rindex", "rowindex must greater than zero");
-
-			var r = FindRow(rindex);
-			if (r == null)
-			{
-				r = new SheetRowItem(new List<SheetCellItem>(), rindex);
-				AddRow(r);
-			}
-			cell.RowIndex = rindex;
-			r.RowCells.Add(cell);
-		}
-
 		public List<T> ToList<T>() where T : new()
 		{
 			List<T> result = new List<T>();
@@ -200,6 +202,7 @@ namespace OpenXMLExtend
 			RowIndex = rindex;
 		}
 		public uint RowIndex { get; set; }
+		public uint RowHeight { get; set; }
 		public List<SheetCellItem> RowCells { get; set; }
 	}
 
@@ -221,6 +224,23 @@ namespace OpenXMLExtend
 		public CellTextPart[] Texts { get; set; }
 	}
 
+	public class SheetRowFormats : IEquatable<SheetRowFormats>
+	{
+		public uint RowHeight { get; set; }
+		public bool Equals(SheetRowFormats other)
+		{
+			if (ReferenceEquals(other, null))
+				return false;
+			if (ReferenceEquals(this, other))
+				return true;
+
+			return RowHeight.Equals(other.RowHeight);
+		}
+		public override int GetHashCode()
+		{
+			return RowHeight.GetHashCode();
+		}
+	}
 	public class SheetCellFormats : IEquatable<SheetCellFormats>
 	{
 		public SheetCellFormats()
@@ -244,6 +264,7 @@ namespace OpenXMLExtend
 		public bool[] Borders { get; set; }
 		public int CellWidth { get; set; }
 		public int CellHeight { get; set; }
+		public bool WrapText{get;set;}
 		public HorizontalAlignments HorizontalAlignment { get; set; }
 		public VerticalAlignments VerticalAlignment { get; set; }
 		public bool Equals(SheetCellFormats other)
@@ -254,17 +275,17 @@ namespace OpenXMLExtend
 			if (ReferenceEquals(this, other))
 				return true;
 
-			return FontSize.Equals(other.FontSize) && FontName.Equals(other.FontName) && FontBold.Equals(other.FontBold) && FontColor.Equals(other.FontColor) && FGColor.Equals(other.FGColor) && Borders[0].Equals(other.Borders[0]) && Borders[1].Equals(other.Borders[1]) && Borders[2].Equals(other.Borders[2]) && Borders[3].Equals(other.Borders[3]) && CellWidth.Equals(other.CellWidth) && CellHeight.Equals(other.CellHeight) && HorizontalAlignment == other.HorizontalAlignment && VerticalAlignment == other.VerticalAlignment;
+			return FontSize.Equals(other.FontSize) && FontName.Equals(other.FontName) && FontBold.Equals(other.FontBold) && FontColor.Equals(other.FontColor) && FGColor.Equals(other.FGColor) && Borders[0].Equals(other.Borders[0]) && Borders[1].Equals(other.Borders[1]) && Borders[2].Equals(other.Borders[2]) && Borders[3].Equals(other.Borders[3]) && CellWidth.Equals(other.CellWidth) && CellHeight.Equals(other.CellHeight) && HorizontalAlignment == other.HorizontalAlignment && VerticalAlignment == other.VerticalAlignment && WrapText == other.WrapText;
 		}
 		public override int GetHashCode()
 		{
-			return FontSize.GetHashCode() ^ FontName.GetHashCode() ^ FontBold.GetHashCode() ^ FontColor.GetHashCode() ^ FGColor.GetHashCode() ^ Borders[0].GetHashCode() ^ Borders[1].GetHashCode() ^ Borders[2].GetHashCode() ^ Borders[3].GetHashCode() ^ CellWidth.GetHashCode() ^ CellHeight.GetHashCode() ^ HorizontalAlignment.GetHashCode() ^ VerticalAlignment.GetHashCode();
+			return FontSize.GetHashCode() ^ FontName.GetHashCode() ^ FontBold.GetHashCode() ^ FontColor.GetHashCode() ^ FGColor.GetHashCode() ^ Borders[0].GetHashCode() ^ Borders[1].GetHashCode() ^ Borders[2].GetHashCode() ^ Borders[3].GetHashCode() ^ CellWidth.GetHashCode() ^ CellHeight.GetHashCode() ^ HorizontalAlignment.GetHashCode() ^ VerticalAlignment.GetHashCode() ^ WrapText.GetHashCode();
 		}
 	}
 	public class CellTextPart
 	{
 		public string Text { get; set; }
-		public DataTypes TheDataType { get; set; }
+		public DataTypes TheDataType{get;set;}
 		public SheetCellFormats PartFormat { get; set; }
 	}
 	public enum HorizontalAlignments
@@ -280,5 +301,4 @@ namespace OpenXMLExtend
 		Top,
 		Middle,
 		Bottom
-	}
-}
+	}}
